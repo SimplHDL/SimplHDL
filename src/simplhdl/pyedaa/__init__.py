@@ -2,9 +2,10 @@ import pyEDAA.ProjectModel as pm
 
 from pathlib import Path
 from typing import Optional
+from .vhdllibrary import VHDLLibrary
 
 
-class HDLLibrary(pm.VHDLLibrary):
+class HDLLibrary(VHDLLibrary):
     pass
 
 

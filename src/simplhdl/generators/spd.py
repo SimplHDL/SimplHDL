@@ -1,10 +1,11 @@
 import os
 import re
 import logging
+import platform as p
 
 from typing import List, Generator
 from pathlib import Path
-from xml.etree.ElementTree import Element, parse
+from xml.etree.ElementTree import Element, parse as xmlparse
 from zipfile import ZipFile
 from shutil import copy, copytree
 
@@ -51,9 +52,12 @@ class Spd:
         spdfile = filename.parent.joinpath(filename.stem, filename.name).with_suffix('.spd')
         if not spdfile.exists():
             raise FileNotFoundError(f"{spdfile}: doesn't exits")
-        self.tree = parse(spdfile)
+        self.tree = xmlparse(spdfile)
         self.root = self.tree.getroot()
         self.location = spdfile.parent.absolute()
+        for element in self.option_elements():
+            self.element_to_option(element)
+        raise NotImplementedError("Continue working on merge on arguents")
         for element in self.file_elements():
             self._files.append(self.element_to_file(element))
         if self.simulators and not self.supported(self.flow, self.simulators):
@@ -69,6 +73,20 @@ class Spd:
                     if not self.supported(self.flow, simulators):
                         continue
                 yield f
+
+    def option_elements(self) -> Generator[Element, None, None]:
+        for o in self.root:
+            if o.tag == 'elaborationOptions':
+                tools = [TOOL_MAP.get(t) for t in self.flow.tools]
+                system = p.system().lower()
+                platform = o.attrib.get('platform', '').lower()
+                simulator = o.attrib.get('simulator')
+                if (simulator is None or simulator in tools):
+                    if (platform is None or platform.startswith(system)):
+                        yield o
+
+    def element_to_option(self, element: Element) -> None:
+        print(element.get('value'))
 
     def element_to_file(self, element: Element) -> File:
         properties = element.attrib
@@ -92,6 +110,22 @@ class Spd:
                 return True
         return False
 
+    # NOTE: One file in each fileset
+    @property
+    def singleFileFilesets(self):
+        filesets = list()
+        for file in self._files:
+            if isinstance(file, HDLSourceFile):
+                library = self.libraries[file.Library.Name]
+                name = f"{file.Path}.fileset"
+                fileset = FileSet(name, vhdlLibrary=library)
+                fileset.AddFile(file)
+                filesets.append(fileset)
+            else:
+                fileset.AddFile(file)
+        return filesets
+
+    # NOTE: Multiple files in each fileset
     @property
     def filesets(self):
         filesets = list()
@@ -153,7 +187,11 @@ class QuartusIP(GeneratorBase):
             if flow.category == FlowCategory.SIMULATION:
                 spd = Spd(newipfile.Path, flow)
                 parent = newipfile.FileSet
-                for fileset in reversed(spd.filesets):
+                if FlowTools.VCS in flow.tools:
+                    filesets = reversed(spd.singleFileFilesets)
+                else:
+                    filesets = reversed(spd.filesets)
+                for fileset in filesets:
                     # Add fileset to parent, then set parent to fileset to make a chain
                     parent._fileSets[fileset.Name] = fileset
                     parent = fileset
