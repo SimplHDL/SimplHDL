@@ -159,6 +159,8 @@ class VcsFlow(SimulationFlow):
             args.add('-ntb_opts uvm')
         if self.is_verdi():
             args.add('-kdb')
+        if self.project.Suppressions.count is not None:
+            args.add(f"-suppress={','.join(self.project.Suppressions)}")
         return ' '.join(list(args) + [self.args.vlogan_args]).strip()
 
     def vhdlan_args(self) -> str:

@@ -151,6 +151,8 @@ class RivieraProFlow(SimulationFlow):
             args.add('-dbg')
         for name, value in self.project.Defines.items():
             args.add(f"+define+{name}={escape(value)}")
+        if self.project.Suppressions.count is not None:
+            args.add(f"-suppress {','.join(self.project.Suppressions)}")
         return ' '.join(list(args) + [self.args.vlog_args])
 
     def vcom_args(self) -> str:

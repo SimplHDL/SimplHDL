@@ -22,6 +22,7 @@ class Project(pm.Project):
     _hooks: Dict[str, List[str]]
     _repos: Dict[str, Repo]
     _reposdir: Optional[Path]
+    _verilogSuppressions: List[str]
 
     def __init__(
         self,
@@ -40,6 +41,7 @@ class Project(pm.Project):
         self._repos = dict()
         self._reposdir = None
         self._part = None
+        self._verilogSuppressions = []
 
     @property
     def ReposDir(self) -> Optional[Path]:
@@ -97,6 +99,13 @@ class Project(pm.Project):
 
     def AddDefine(self, name: str, value: str) -> None:
         self._verilogDefines[name] = value
+
+    @property
+    def Suppressions(self) -> List[str]:
+        return self._verilogSuppressions
+    
+    def AddSuppression(self, suppression: str) -> None:
+        self._verilogSuppressions.append(suppression)
 
     @property
     def Part(self) -> str:
