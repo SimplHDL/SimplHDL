@@ -30,6 +30,7 @@ def load_builtin_plugins() -> None:
     import_module('simplhdl.flows.xsim.xsimflow')
     import_module('simplhdl.flows.rivierapro.rivieraproflow')
     import_module('simplhdl.flows.quartusdse.quartusdseflow')
+    import_module('simplhdl.flows.encrypt.encryptflow')
     import_module('simplhdl.flows.vsg.vsgflow')
     import_module('simplhdl.flows.verible.veribleflow')
     import_module('simplhdl.flows.lint.lintflow')
