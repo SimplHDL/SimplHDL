@@ -1,0 +1,77 @@
+# Documentation: https://www.intel.com/content/www/us/en/docs/programmable/683609/24-3-1/component-interface-tcl-reference.html
+
+package require qsys
+
+proc module_properties {} {
+    set_module_property     NAME                    "{{name}}"
+    set_module_property     AUTHOR                  "{{author}}"
+    set_module_property     VERSION                 {{version}}
+    set_module_property     DISPLAY_NAME            "{{name}}"
+    set_module_property     EDITABLE                false
+    set_module_property     GROUP                   "{{group}}"
+    set_module_property     DESCRIPTION             "{{description}}"
+
+    set_module_property     SUPPORTED_DEVICE_FAMILIES   {"MAX 10" "Arria 10" "Stratix 10" "Agilex 7"}
+    set_module_property     HIDE_FROM_QSYS              true
+
+    # Callbacks
+    set_module_property VALIDATION_CALLBACK             validation
+    set_module_property ELABORATION_CALLBACK            elaboration
+    # set_module_property COMPOSITION_CALLBACK            composition
+    # set_module_property STRUCTURAL_COMPOSITION_CALLBACK structural_composition
+
+    # Documentation
+    # add_documentation_link  "User Guide"    <url>
+}
+
+proc validation {} {}
+proc elaboration {} {
+    interfaces
+}
+proc composition {} {}
+proc structural_composition {} {}
+
+proc fileset {name} {
+    add_fileset $name $name "" ""
+    set_fileset_property $name TOP_LEVEL {{toplevel}}
+{% for file, type in files.items() %}
+    add_fileset_file {{file}} {{type}} PATH rtl/{{file}} TOP_LEVEL_FILE
+{% endfor %}
+}
+
+proc parameters {} {
+    add_parameter WIDTH INTEGER 8 ""
+    set_parameter_property WIDTH DEFAULT_VALUE 8
+    set_parameter_property WIDTH DISPLAY_NAME WIDTH
+    set_parameter_property WIDTH ALLOWED_RANGES 0:128
+    set_parameter_property WIDTH DESCRIPTION "Width of input and output values"
+    set_parameter_property WIDTH AFFECTS_GENERATION false
+    set_parameter_property WIDTH AFFECTS_ELABORATION true
+    set_parameter_property WIDTH HDL_PARAMETER true
+    set_parameter_property WIDTH EXPORT true
+}
+
+proc interfaces {} {
+    set width [get_parameter_value WIDTH]
+    add_interface       adder_input   conduit                    input
+    add_interface_port  adder_input   clk_i      clk_i           input   1
+    set_port_property   clk_i   DESCRIPTION "Input clock"
+    add_interface_port  adder_input   rst_i      rst_i           input   1
+    set_port_property   rst_i   DESCRIPTION "Input reset active high"
+    add_interface_port  adder_input   a_i        a_i             input   $width
+    set_port_property   a_i   DESCRIPTION "Value A for the addition"
+    add_interface_port  adder_input   b_i        b_i             input   $width
+    set_port_property   b_i   DESCRIPTION "Value B for the addition"
+
+    add_interface       adder_output  conduit                    output
+    add_interface_port  adder_output  sum_o      sum_o           output  $width
+    set_port_property   sum_o   DESCRIPTION "The result of the addition value A and B"
+}
+
+module_properties
+
+fileset QUARTUS_SYNTH
+fileset SIM_VERILOG
+fileset SIM_VHDL
+
+parameters
